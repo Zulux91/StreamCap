@@ -9,7 +9,8 @@ router = APIRouter()
 async def health(settings=Depends(get_settings)):
     version = "unknown"
     try:
-        import json, os
+        import json
+        import os
         path = os.path.join(settings.app.run_path, "config", "version.json")
         with open(path) as f:
             data = json.load(f)

@@ -24,6 +24,7 @@ API_PORT = int(os.getenv("API_PORT", "6007"))
 
 def _start_api(recording_manager, auth_manager, settings, flet_loop):
     import uvicorn
+
     from app.api import dependencies
     from app.api.app import app as api_app
 

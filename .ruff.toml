@@ -76,3 +76,6 @@ ignore = [
     "F401", # unused-import
     "F811", # redefined-while-unused
 ]
+"app/api/routes/*.py" = [
+    "B008", # FastAPI uses Depends/Query calls in endpoint defaults
+]
