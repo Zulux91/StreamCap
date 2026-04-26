@@ -33,13 +33,15 @@ export function Sidebar() {
     <GlassSidebar collapsed={sidebarCollapsed} className="flex flex-col">
       <div
         className={cn(
-          "flex items-center h-14 px-4 border-b border-white/10 shrink-0",
+          "flex items-center h-16 px-4 border-b border-white/15 shrink-0 text-white",
           sidebarCollapsed ? "justify-center" : "gap-3"
         )}
       >
-        <CastIcon className="size-5 text-primary shrink-0" />
+        <div className="grid size-9 shrink-0 place-items-center rounded-2xl bg-white/16 shadow-inner shadow-white/15">
+          <CastIcon className="size-5 text-white" />
+        </div>
         {!sidebarCollapsed && (
-          <span className="font-semibold tracking-tight">StreamCap</span>
+          <span className="text-base font-semibold tracking-tight">StreamCap</span>
         )}
       </div>
 
@@ -48,12 +50,12 @@ export function Sidebar() {
           {navItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || pathname.startsWith(href + "/");
             const linkClass = cn(
-              "flex items-center gap-3 rounded-lg text-sm font-medium transition-all",
-              "hover:bg-white/10 dark:hover:bg-white/5",
+              "flex items-center gap-3 rounded-2xl text-sm font-medium transition-all",
+              "hover:bg-white/14 hover:shadow-inner hover:shadow-white/10",
               sidebarCollapsed ? "justify-center p-2.5" : "px-3 py-2",
               isActive
-                ? "bg-primary/15 text-primary border border-primary/25"
-                : "text-foreground/70 hover:text-foreground border border-transparent"
+                ? "bg-white/22 text-white border border-white/24 shadow-lg shadow-indigo-950/20"
+                : "text-white/76 hover:text-white border border-transparent"
             );
 
             return (
@@ -74,13 +76,13 @@ export function Sidebar() {
         </TooltipProvider>
       </nav>
 
-      <div className="p-2 border-t border-white/10 shrink-0">
+      <div className="p-2 border-t border-white/15 shrink-0">
         <button
           type="button"
           onClick={toggleSidebar}
           className={cn(
             buttonVariants({ variant: "ghost", size: "icon" }),
-            "w-full hover:bg-white/10",
+            "w-full text-white/80 hover:bg-white/14 hover:text-white",
             sidebarCollapsed ? "justify-center" : "justify-end"
           )}
           aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}

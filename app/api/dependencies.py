@@ -1,7 +1,7 @@
 import asyncio
 from typing import Optional
 
-from fastapi import Header, HTTPException
+from fastapi import Cookie, Header, HTTPException
 
 _recording_manager = None
 _auth_manager = None
@@ -25,10 +25,18 @@ def get_flet_loop() -> Optional[asyncio.AbstractEventLoop]:
     return _flet_loop
 
 
-async def verify_session(authorization: str = Header(None)) -> dict:
-    if not authorization or not authorization.startswith("Bearer "):
+async def verify_session(
+    authorization: str = Header(None),
+    streamcap_token: str | None = Cookie(None, alias="streamcap-token"),
+) -> dict:
+    token = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.removeprefix("Bearer ")
+    elif streamcap_token:
+        token = streamcap_token
+
+    if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    token = authorization.removeprefix("Bearer ")
     if not _auth_manager or not _auth_manager.validate_session(token):
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     return _auth_manager.active_sessions[token]

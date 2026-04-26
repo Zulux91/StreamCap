@@ -37,7 +37,7 @@ function getPageTitle(pathname: string): string {
 
 const triggerClass = cn(
   buttonVariants({ variant: "ghost", size: "icon" }),
-  "hover:bg-white/10 dark:hover:bg-white/5"
+  "rounded-2xl hover:bg-white/14 dark:hover:bg-white/10"
 );
 
 export function Header() {
@@ -48,7 +48,7 @@ export function Header() {
   const pageTitle = getPageTitle(pathname);
 
   return (
-    <header className="glass-sm border-b border-white/10 h-14 flex items-center px-4 gap-3 shrink-0">
+    <header className="glass-sm border-b border-white/15 h-16 flex items-center px-4 gap-3 shrink-0 shadow-sm shadow-indigo-950/10">
       <button
         type="button"
         className={cn(triggerClass, "md:hidden")}
@@ -58,7 +58,7 @@ export function Header() {
         <MenuIcon className="size-5" />
       </button>
 
-      <h1 className="flex-1 text-sm font-semibold">{pageTitle}</h1>
+      <h1 className="flex-1 text-sm font-semibold tracking-wide text-foreground/90">{pageTitle}</h1>
 
       <DropdownMenu>
         <DropdownMenuTrigger className={triggerClass} aria-label="Toggle theme">

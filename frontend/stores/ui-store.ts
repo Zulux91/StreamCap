@@ -22,7 +22,7 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
-      theme: "system",
+      theme: "dark",
       sidebarCollapsed: false,
       recordingViewMode: "grid",
       selectedRecordingIds: [],
