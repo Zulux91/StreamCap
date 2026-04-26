@@ -12,6 +12,8 @@ def send_notification(title: str, message: str, app_icon: str = "", app_name: st
 
 
 def should_push_notification(app) -> bool:
+    if app.is_web_mode or not hasattr(app.page, "window"):
+        return False
     is_window_hidden = app.page.window.minimized or not app.page.window.visible
     system_notification_enabled = app.settings.user_config.get("system_notification_enabled", True)
     return not app.page.web and system_notification_enabled and is_window_hidden
