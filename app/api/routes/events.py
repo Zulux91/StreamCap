@@ -31,6 +31,8 @@ async def events_stream(
                     event = await asyncio.to_thread(q.get, True, 30.0)
                     # Serialize only JSON-safe data (exclude Recording objects)
                     safe_data = {k: v for k, v in event.data.items() if k != "recordings"}
+                    if event.rec_id:
+                        safe_data["rec_id"] = event.rec_id
                     yield {
                         "event": event.event_type,
                         "data": json.dumps(safe_data),

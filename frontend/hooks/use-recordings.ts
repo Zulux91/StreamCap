@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { recordingService } from "@/services/recording-service";
-import type { CreateRecordingInput, UpdateRecordingInput } from "@/types/recording";
+import type { CreateRecordingInput, Recording, UpdateRecordingInput } from "@/types/recording";
 import toast from "react-hot-toast";
 
 interface RecordingsFilter {
@@ -24,6 +24,17 @@ export function useRecording(id: string) {
     queryKey: ["recordings", id],
     queryFn: () => recordingService.get(id),
   });
+}
+
+type RecordingsSnapshot = [readonly unknown[], Recording[] | undefined][];
+
+function updateRecordingQueries(
+  qc: ReturnType<typeof useQueryClient>,
+  updater: (recording: Recording) => Recording
+) {
+  qc.setQueriesData<Recording[]>({ queryKey: ["recordings"] }, (old) =>
+    old?.map(updater) ?? old
+  );
 }
 
 export function useCreateRecording() {
@@ -69,17 +80,19 @@ export function useStartMonitoring() {
     mutationFn: (id: string) => recordingService.startMonitoring(id),
     onMutate: async (id) => {
       await qc.cancelQueries({ queryKey: ["recordings"] });
-      const prev = qc.getQueryData(["recordings"]);
-      qc.setQueryData<ReturnType<typeof recordingService.list> extends Promise<infer T> ? T : never>(
-        ["recordings"],
-        (old) => old?.map((r) => r.rec_id === id ? { ...r, monitor_status: true, status_info: "STATUS_CHECKING" as const } : r)
+      const prev = qc.getQueriesData<Recording[]>({ queryKey: ["recordings"] });
+      updateRecordingQueries(qc, (r) =>
+        r.rec_id === id ? { ...r, monitor_status: true, status_info: "STATUS_CHECKING" } : r
       );
       return { prev };
     },
     onError: (_err, _id, ctx) => {
-      if (ctx?.prev) qc.setQueryData(["recordings"], ctx.prev);
+      ctx?.prev?.forEach(([queryKey, data]: RecordingsSnapshot[number]) => {
+        qc.setQueryData(queryKey, data);
+      });
       toast.error("Failed to start monitoring");
     },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["recordings"] }),
   });
 }
 
@@ -89,17 +102,21 @@ export function useStopMonitoring() {
     mutationFn: (id: string) => recordingService.stopMonitoring(id),
     onMutate: async (id) => {
       await qc.cancelQueries({ queryKey: ["recordings"] });
-      const prev = qc.getQueryData(["recordings"]);
-      qc.setQueryData<ReturnType<typeof recordingService.list> extends Promise<infer T> ? T : never>(
-        ["recordings"],
-        (old) => old?.map((r) => r.rec_id === id ? { ...r, monitor_status: false, status_info: "STOPPED_MONITORING" as const } : r)
+      const prev = qc.getQueriesData<Recording[]>({ queryKey: ["recordings"] });
+      updateRecordingQueries(qc, (r) =>
+        r.rec_id === id
+          ? { ...r, monitor_status: false, is_recording: false, status_info: "STOPPED_MONITORING" }
+          : r
       );
       return { prev };
     },
     onError: (_err, _id, ctx) => {
-      if (ctx?.prev) qc.setQueryData(["recordings"], ctx.prev);
+      ctx?.prev?.forEach(([queryKey, data]: RecordingsSnapshot[number]) => {
+        qc.setQueryData(queryKey, data);
+      });
       toast.error("Failed to stop monitoring");
     },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["recordings"] }),
   });
 }
 

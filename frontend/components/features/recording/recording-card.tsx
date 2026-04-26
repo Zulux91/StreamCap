@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { GlassCard } from "@/components/glass/glass-card";
 import { Badge } from "@/components/ui/badge";
@@ -119,10 +120,28 @@ export function RecordingCard({
   const startMonitoring = useStartMonitoring();
   const stopMonitoring = useStopMonitoring();
   const deleteRecording = useDeleteRecording();
+  const durationKey = `${recording.rec_id}:${recording.is_recording}:${recording.cumulative_duration_seconds}`;
+  const [durationTick, setDurationTick] = useState({ key: durationKey, value: 0 });
+
+  useEffect(() => {
+    if (!recording.is_recording) return;
+
+    const interval = setInterval(() => {
+      setDurationTick((current) => ({
+        key: durationKey,
+        value: current.key === durationKey ? current.value + 1 : 1,
+      }));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [durationKey, recording.is_recording]);
 
   const statusInfo = recording.status_info
     ? STATUS_CONFIG[recording.status_info] ?? FALLBACK_STATUS
     : FALLBACK_STATUS;
+  const displayedDuration =
+    recording.cumulative_duration_seconds +
+    (durationTick.key === durationKey ? durationTick.value : 0);
 
   const handleStart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -177,7 +196,7 @@ export function RecordingCard({
           </Badge>
           {recording.is_recording && (
             <span className="text-xs text-muted-foreground hidden md:block">
-              {formatDuration(recording.cumulative_duration_seconds)}
+              {formatDuration(displayedDuration)}
             </span>
           )}
           {recording.speed && recording.speed !== "0 KB/s" && (
@@ -256,7 +275,7 @@ export function RecordingCard({
           {recording.is_recording && (
             <span className="flex items-center gap-1">
               <VideoIcon className="size-3 text-red-400" />
-              {formatDuration(recording.cumulative_duration_seconds)}
+              {formatDuration(displayedDuration)}
             </span>
           )}
           {recording.speed && recording.speed !== "0 KB/s" && (

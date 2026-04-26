@@ -39,7 +39,10 @@ export function useRealtime() {
 
       const updateRecording = (event: MessageEvent) => {
         const data = parseEventData<RecordingEventData>(event);
-        if (!data?.rec_id) return;
+        if (!data?.rec_id) {
+          queryClient.invalidateQueries({ queryKey: ["recordings"] });
+          return;
+        }
 
         queryClient.setQueriesData<Recording[]>(
           { queryKey: ["recordings"] },
@@ -48,6 +51,7 @@ export function useRealtime() {
               r.rec_id === data.rec_id ? { ...r, ...data } : r
             ) ?? old
         );
+        queryClient.invalidateQueries({ queryKey: ["recordings"] });
       };
 
       es.onopen = () => {
