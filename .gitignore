@@ -14,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
 parts/
 sdist/
@@ -89,7 +89,7 @@ ipython_config.py
 /config/web_auth.json
 .ruff_cache/
 logs/
-storage/
+/storage/
 ffmpeg/
 node/
 node-v*.zip

@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 
@@ -6,6 +7,7 @@ import flet as ft
 from . import execute_dir
 from .core.config.config_manager import ConfigManager
 from .core.config.language_manager import LanguageManager
+from .core.events.event_bus import EventBus
 from .core.recording.record_manager import RecordingManager
 from .core.runtime.process_manager import AsyncProcessManager
 from .core.update.update_checker import UpdateChecker
@@ -75,6 +77,7 @@ class App:
         self.page.run_task(self.install_manager.check_env)
         self.page.run_task(self.record_manager.check_free_space)
         self.page.run_task(self._check_for_updates)
+        self.page.run_task(self._bridge_events)
 
     def initialize_pages(self):
         return {
@@ -140,3 +143,45 @@ class App:
         await self.record_manager.setup_periodic_live_check(
             int(self.record_manager.loop_time_seconds or 180)
         )
+
+    async def _bridge_events(self):
+        """Bridge EventBus events to Flet UI components."""
+        import queue as _queue
+        event_bus = EventBus.get_instance()
+        q = event_bus.subscribe()
+        try:
+            while True:
+                try:
+                    event = await asyncio.to_thread(q.get, True, 5.0)
+                except _queue.Empty:
+                    continue
+                if event.event_type == "recording_updated":
+                    recording = self.record_manager.find_recording_by_id(event.rec_id)
+                    if recording:
+                        self.page.run_task(self.record_card_manager.update_card, recording)
+                        self.page.pubsub.send_others_on_topic("update", recording)
+                elif event.event_type == "recordings_deleted":
+                    rec_ids = event.data.get("rec_ids", [])
+                    if rec_ids:
+                        proxies = [type("R", (), {"rec_id": rid})() for rid in rec_ids]
+                        self.page.run_task(self.record_card_manager.remove_recording_card, proxies)
+                        self.page.pubsub.send_others_on_topic("delete", proxies)
+                        self.page.run_task(self._update_filter_area)
+                elif event.event_type == "alert":
+                    message = event.data.get("message", "")
+                    duration = event.data.get("duration", 4000)
+                    show_close_icon = event.data.get("show_close_icon", False)
+                    self.page.run_task(
+                        self.snack_bar.show_snack_bar,
+                        message,
+                        duration=duration,
+                        show_close_icon=show_close_icon,
+                    )
+        finally:
+            event_bus.unsubscribe(q)
+
+    async def _update_filter_area(self):
+        if hasattr(self, "current_page") and hasattr(self.current_page, "content_area"):
+            if len(self.current_page.content_area.controls) > 1:
+                self.current_page.content_area.controls[1] = self.current_page.create_filter_area()
+                self.current_page.content_area.update()

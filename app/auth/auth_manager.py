@@ -1,18 +1,23 @@
 import hashlib
 import secrets
+from datetime import datetime
 from typing import Optional
+
+from cachetools import TTLCache
 
 from ..utils.logger import logger
 
+SESSION_TTL = 86400  # 24 hours
+
 
 class AuthManager:
-    
+
     def __init__(self, app):
         self.app = app
         self.config_manager = app.config_manager
         self.is_authenticated = False
         self.session_token = None
-        self.active_sessions = {}
+        self.active_sessions: TTLCache = TTLCache(maxsize=100, ttl=SESSION_TTL)
     
     async def initialize(self):
         web_auth = self.config_manager.load_web_auth_config()
@@ -55,7 +60,8 @@ class AuthManager:
                     session_token = self._generate_session_token()
                     self.active_sessions[session_token] = {
                         "username": username,
-                        "is_admin": user.get("is_admin", False)
+                        "is_admin": user.get("is_admin", False),
+                        "login_at": datetime.utcnow().isoformat(),
                     }
                     return True, session_token
         

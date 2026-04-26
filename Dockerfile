@@ -24,9 +24,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     tzdata \
     curl \
-    gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -38,5 +35,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo "$TZ" > /etc/timezone
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /app/ ./
+
+EXPOSE 6006 6007
 
 CMD ["sh", "-c", "python main.py --web --host 0.0.0.0"]

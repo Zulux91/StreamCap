@@ -1,19 +1,35 @@
 name: Test
 
 on:
+  push:
+    branches: [main, frontend-rewrite]
+    paths:
+      - 'app/**'
+      - 'main.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
   pull_request:
     branches: [main]
+    paths:
+      - 'app/**'
+      - 'main.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
 
 jobs:
-  build:
+  test-python:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+        cache: 'pip'
+        cache-dependency-path: |
+          requirements.txt
+          requirements-web.txt
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip

@@ -4,8 +4,12 @@ on:
   push:
     branches:
       - main
+      - frontend-rewrite
     paths:
       - 'app/**'
+      - 'main.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
       - '.ruff.toml'
   pull_request:
     types:
@@ -13,6 +17,9 @@ on:
       - synchronize
     paths:
       - 'app/**'
+      - 'main.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
       - '.ruff.toml'
 
 jobs:
@@ -23,10 +30,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'requirements-web.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
@@ -39,7 +46,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install ruff
+          pip install ruff~=0.15.8
 
       - name: Run ruff lint check
         run: ruff check main.py app --config .ruff.toml

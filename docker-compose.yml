@@ -1,12 +1,17 @@
 
 services:
-  streamcap:
-    image: ihmily/streamcap
+  backend:
+    image: ${BACKEND_IMAGE:-zulux91/streamcap-backend:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
     tty: true
     ports:
       - "${PORT:-6006}:${PORT:-6006}"
+      - "${API_PORT:-6007}:${API_PORT:-6007}"
     environment:
       - PORT=${PORT:-6006}
+      - API_PORT=${API_PORT:-6007}
       - TZ=${TZ:-Asia/Shanghai}
     volumes:
       - ./logs:/app/logs
@@ -14,28 +19,29 @@ services:
       - ./downloads:/app/downloads
       - ./.env:/app/.env
     healthcheck:
-      test: ["CMD", "sh", "-c", "curl -f http://localhost:${PORT:-6006}/about"]
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:${API_PORT:-6007}/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     networks:
       - streamcap-network
 
-  video_api:
-      image: ihmily/streamcap
-      command: python -m app.api.video_stream_service
-      ports:
-        - "${VIDEO_API_PORT:-6007}:${VIDEO_API_PORT:-6007}"
-      environment:
-        - TZ=${TZ:-Asia/Shanghai}
-        - CUSTOM_VIDEO_ROOT_DIR=${CUSTOM_VIDEO_ROOT_DIR:-./downloads}
-      volumes:
-        - ./downloads:/app/downloads
-        - ./.env:/app/.env
-      depends_on:
-        - streamcap
-      networks:
-        - streamcap-network
+  frontend:
+    image: ${FRONTEND_IMAGE:-zulux91/streamcap-frontend:latest}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:6007}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:6007}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - streamcap-network
 
 networks:
   streamcap-network:

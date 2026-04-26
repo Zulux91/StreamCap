@@ -1,6 +1,8 @@
 import argparse
+import asyncio
 import multiprocessing
 import os
+import threading
 
 import flet as ft
 from dotenv import load_dotenv
@@ -17,6 +19,19 @@ from app.utils.logger import logger
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 6006
+API_PORT = int(os.getenv("API_PORT", "6007"))
+
+
+def _start_api(recording_manager, auth_manager, settings, flet_loop):
+    import uvicorn
+    from app.api import dependencies
+    from app.api.app import app as api_app
+
+    dependencies._recording_manager = recording_manager
+    dependencies._auth_manager = auth_manager
+    dependencies._settings = settings
+    dependencies._flet_loop = flet_loop
+    uvicorn.run(api_app, host="0.0.0.0", port=API_PORT, log_level="warning")
 WINDOW_SCALE = 0.65
 MIN_WIDTH = 950
 ASSETS_DIR = "assets"
@@ -186,6 +201,15 @@ async def main(page: ft.Page) -> None:
         auth_manager = AuthManager(app)
         app.auth_manager = auth_manager
         await auth_manager.initialize()
+
+        flet_loop = asyncio.get_running_loop()
+        api_thread = threading.Thread(
+            target=_start_api,
+            args=(app.record_manager, auth_manager, app.settings, flet_loop),
+            daemon=True,
+        )
+        api_thread.start()
+        logger.info(f"FastAPI started on port {API_PORT}")
         
         login_required = app.settings.get_config_value("login_required", False)
         
