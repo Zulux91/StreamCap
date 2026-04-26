@@ -9,6 +9,7 @@ import string
 import subprocess
 import sys
 import traceback
+import unicodedata
 from datetime import datetime, time, timedelta
 from pathlib import Path
 from typing import Any, Optional
@@ -210,6 +211,18 @@ def clean_name(input_text, default=None):
         cleaned_name = remove_emojis(cleaned_name, "_").replace("__", "_").strip("_")
         return cleaned_name or default
     return default
+
+
+def clean_path_component(input_text, default=None):
+    """Sanitize generated file/folder path parts to portable ASCII names."""
+    cleaned_name = clean_name(input_text, default)
+    if not cleaned_name:
+        return default
+    normalized = unicodedata.normalize("NFKD", cleaned_name)
+    ascii_name = normalized.encode("ascii", "ignore").decode("ascii")
+    ascii_name = re.sub(r"[^A-Za-z0-9._-]+", "_", ascii_name)
+    ascii_name = re.sub(r"_+", "_", ascii_name).strip("._-")
+    return ascii_name or default
 
 
 def is_valid_url(url):

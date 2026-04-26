@@ -77,9 +77,12 @@ class LiveStreamRecorder:
             live_title = stream_info.title
 
         if self.recording.streamer_name and self.recording.streamer_name != self._["live_room"]:
-            stream_info.anchor_name = utils.clean_name(self.recording.streamer_name)
+            stream_info.anchor_name = utils.clean_path_component(self.recording.streamer_name, "streamer")
         else:
-            stream_info.anchor_name = utils.clean_name(stream_info.anchor_name, self._["live_room"])
+            stream_info.anchor_name = utils.clean_path_component(stream_info.anchor_name, "streamer")
+
+        platform_name = utils.clean_path_component(stream_info.platform, self.platform_key or "platform")
+        live_title = utils.clean_path_component(live_title, None)
 
         now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
 
@@ -89,12 +92,12 @@ class LiveStreamRecorder:
             filename = filename.replace("{anchor_name}", stream_info.anchor_name or "")
             filename = filename.replace("{title}", live_title or "")
             filename = filename.replace("{time}", now)
-            filename = filename.replace("{platform}", stream_info.platform or "")
+            filename = filename.replace("{platform}", platform_name or "")
 
             while "__" in filename:
                 filename = filename.replace("__", "_")
 
-            filename = filename.strip("_")
+            filename = utils.clean_path_component(filename, None)
 
             if not filename:
                 full_filename = "_".join([i for i in (stream_info.anchor_name, live_title, now) if i])
@@ -103,7 +106,7 @@ class LiveStreamRecorder:
         else:
             full_filename = "_".join([i for i in (stream_info.anchor_name, live_title, now) if i])
 
-        return full_filename
+        return utils.clean_path_component(full_filename, now)
 
     def _get_output_dir(self, stream_info: StreamData) -> str:
         if self.recording.recording_dir and self.user_config.get("folder_name_time"):
@@ -117,15 +120,19 @@ class LiveStreamRecorder:
         now = datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
         output_dir = self.output_dir.rstrip("/").rstrip("\\")
         if self.user_config.get("folder_name_platform"):
-            output_dir = os.path.join(output_dir, stream_info.platform)
+            output_dir = os.path.join(
+                output_dir,
+                utils.clean_path_component(stream_info.platform, self.platform_key or "platform"),
+            )
         if self.user_config.get("folder_name_author"):
-            output_dir = os.path.join(output_dir, stream_info.anchor_name)
+            output_dir = os.path.join(output_dir, utils.clean_path_component(stream_info.anchor_name, "streamer"))
         if self.user_config.get("folder_name_time"):
             output_dir = os.path.join(output_dir, now[:10])
         if self.user_config.get("folder_name_title") and stream_info.title:
-            live_title = self._clean_and_truncate_title(stream_info.title)
+            live_title = utils.clean_path_component(self._clean_and_truncate_title(stream_info.title), "live")
             if self.user_config.get("folder_name_time"):
-                output_dir = os.path.join(output_dir, f"{live_title}_{stream_info.anchor_name}")
+                anchor_name = utils.clean_path_component(stream_info.anchor_name, "streamer")
+                output_dir = os.path.join(output_dir, f"{live_title}_{anchor_name}")
             else:
                 output_dir = os.path.join(output_dir, f"{now[:10]}_{live_title}")
         os.makedirs(output_dir, exist_ok=True)
