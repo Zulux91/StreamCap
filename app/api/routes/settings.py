@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Body, Depends
 
 from ..dependencies import get_recording_manager, get_settings, verify_session
 
@@ -70,7 +70,7 @@ async def get_cookies(
 
 @router.put("/cookies")
 async def update_cookies(
-    body: Any,
+    body: Any = Body(...),
     settings=Depends(get_settings),
     rm=Depends(get_recording_manager),
     _: dict = Depends(verify_session),

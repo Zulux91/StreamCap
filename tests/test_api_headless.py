@@ -97,6 +97,21 @@ class HeadlessApiSmokeTest(unittest.IsolatedAsyncioTestCase):
         response = self.client.delete(f"/api/recordings/{rec_id}", headers=headers)
         self.assertEqual(response.status_code, 204, response.text)
 
+    def test_browser_exported_cookie_array_can_be_saved(self):
+        headers = self._auth_headers()
+
+        response = self.client.put(
+            "/api/settings/cookies",
+            headers=headers,
+            json=[
+                {"name": "sessionid", "value": "abc123", "domain": ".tiktok.com"},
+                {"name": "msToken", "value": "token456", "domain": ".tiktok.com"},
+            ],
+        )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["tiktok"], "sessionid=abc123; msToken=token456")
+
     def test_live_stream_recorder_can_initialize_headless(self):
         recording = Recording(
             rec_id="smoke",
