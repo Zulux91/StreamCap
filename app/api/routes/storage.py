@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from ..dependencies import get_settings, verify_session
 
 router = APIRouter()
+VIDEO_EXTENSIONS = {".mp4", ".ts", ".flv", ".mkv", ".mov", ".nut"}
 
 
 def _get_video_dir(settings) -> Path:
@@ -22,6 +23,14 @@ def _validate_path(video_dir: Path, relative: str) -> Path:
         return resolved
     except ValueError:
         raise HTTPException(status_code=400, detail="Path outside allowed directory")
+
+
+def _count_videos(video_dir: Path) -> int:
+    return sum(
+        1
+        for item in video_dir.rglob("*")
+        if item.is_file() and item.suffix.lower() in VIDEO_EXTENSIONS
+    )
 
 
 @router.get("/browse")
@@ -65,6 +74,7 @@ async def storage_stats(
             "used": used,
             "free": free,
             "path": str(video_dir),
+            "video_count": _count_videos(video_dir),
         }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

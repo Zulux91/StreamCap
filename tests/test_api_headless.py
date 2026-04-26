@@ -160,14 +160,17 @@ class HeadlessApiSmokeTest(unittest.IsolatedAsyncioTestCase):
         nested.mkdir(parents=True)
         video = nested / "sample.mp4"
         video.write_bytes(b"video")
+        (nested / "sample.ts").write_bytes(b"video")
+        (nested / "notes.txt").write_text("not a video")
 
         response = self.client.get("/api/storage/stats", headers=headers)
         assert response.status_code == 200, response.text
         stats = response.json()
-        assert set(stats.keys()) == {"total", "used", "free", "path"}
+        assert set(stats.keys()) == {"total", "used", "free", "path", "video_count"}
         assert isinstance(stats["total"], int)
         assert isinstance(stats["used"], int)
         assert isinstance(stats["free"], int)
+        assert stats["video_count"] == 2
 
         response = self.client.get("/api/storage/browse", headers=headers)
         assert response.status_code == 200, response.text
@@ -179,9 +182,9 @@ class HeadlessApiSmokeTest(unittest.IsolatedAsyncioTestCase):
         response = self.client.get("/api/storage/browse", headers=headers, params={"path": "TikTok/heysoymaria"})
         assert response.status_code == 200, response.text
         file_entries = response.json()
-        assert file_entries[0]["name"] == "sample.mp4"
-        assert file_entries[0]["type"] == "file"
-        assert file_entries[0]["size"] == 5
+        sample = next(entry for entry in file_entries if entry["name"] == "sample.mp4")
+        assert sample["type"] == "file"
+        assert sample["size"] == 5
 
     def test_video_endpoint_accepts_session_cookie(self):
         token, _headers = self._auth_token_and_headers()

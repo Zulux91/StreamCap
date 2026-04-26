@@ -28,6 +28,7 @@ export interface StorageStats {
   used: number;
   free: number;
   path: string;
+  video_count: number;
 }
 
 export interface AppStatus {

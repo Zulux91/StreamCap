@@ -41,7 +41,6 @@ export default function StoragePage() {
   const { data: stats } = useStorageStats();
   const deleteFile = useDeleteFile();
   const entries = browse ?? [];
-  const videoCount = entries.filter((entry) => entry.type === "file" && isVideo(entry)).length;
 
   const breadcrumbs = currentPath ? currentPath.split("/").filter(Boolean) : [];
 
@@ -86,7 +85,7 @@ export default function StoragePage() {
             { label: "Total", value: formatFileSize(stats.total) },
             { label: "Used", value: formatFileSize(stats.used) },
             { label: "Free", value: formatFileSize(stats.free) },
-            { label: "Videos", value: String(videoCount) },
+            { label: "Videos", value: String(stats.video_count) },
           ].map(({ label, value }) => (
             <GlassCard key={label} padding="sm" className="space-y-1">
               <p className="text-xs text-muted-foreground">{label}</p>
