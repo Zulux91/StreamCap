@@ -12,6 +12,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const VOLUME_KEY = "streamcap-video-volume";
+const MUTED_KEY = "streamcap-video-muted";
+const POSITION_PREFIX = "streamcap-video-position:";
+const POSITION_SAVE_INTERVAL_SECONDS = 2;
+
 interface VideoPlayerProps {
   src: string;
   contentType?: string;
@@ -25,6 +30,8 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const restoredPositionRef = useRef(false);
+  const lastSavedPositionRef = useRef(0);
   const [paused, setPaused] = useState(true);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -32,6 +39,31 @@ export function VideoPlayer({
   const [duration, setDuration] = useState(0);
 
   const hasDuration = Number.isFinite(duration) && duration > 0;
+  const positionKey = `${POSITION_PREFIX}${src}`;
+
+  const getStoredNumber = (key: string) => {
+    if (typeof window === "undefined") return null;
+    const value = Number(window.localStorage.getItem(key));
+    return Number.isFinite(value) ? value : null;
+  };
+
+  const getStoredBoolean = (key: string) => {
+    if (typeof window === "undefined") return null;
+    const value = window.localStorage.getItem(key);
+    if (value === "true") return true;
+    if (value === "false") return false;
+    return null;
+  };
+
+  const savePosition = (time = videoRef.current?.currentTime) => {
+    if (typeof window === "undefined" || !Number.isFinite(time)) return;
+    window.localStorage.setItem(positionKey, String(time));
+  };
+
+  const clearPosition = () => {
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem(positionKey);
+  };
 
   const formatTime = (value: number) => {
     if (!Number.isFinite(value) || value < 0) return "0:00";
@@ -55,12 +87,14 @@ export function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
     video.currentTime = Math.min(Math.max(video.currentTime + seconds, 0), duration || video.currentTime + seconds);
+    savePosition(video.currentTime);
   };
 
   const seekTo = (value: string) => {
     const video = videoRef.current;
     if (!video) return;
     video.currentTime = Number(value);
+    savePosition(video.currentTime);
   };
 
   const changeVolume = (value: string) => {
@@ -72,6 +106,8 @@ export function VideoPlayer({
     video.muted = nextVolume === 0;
     setVolume(nextVolume);
     setMuted(video.muted);
+    window.localStorage.setItem(VOLUME_KEY, String(nextVolume));
+    window.localStorage.setItem(MUTED_KEY, String(video.muted));
   };
 
   const toggleMute = () => {
@@ -79,6 +115,43 @@ export function VideoPlayer({
     if (!video) return;
     video.muted = !video.muted;
     setMuted(video.muted);
+    window.localStorage.setItem(MUTED_KEY, String(video.muted));
+  };
+
+  const restorePlaybackState = (video: HTMLVideoElement) => {
+    const storedVolume = getStoredNumber(VOLUME_KEY);
+    const storedMuted = getStoredBoolean(MUTED_KEY);
+    const storedPosition = getStoredNumber(positionKey);
+
+    if (storedVolume !== null) {
+      video.volume = Math.min(Math.max(storedVolume, 0), 1);
+    }
+    if (storedMuted !== null) {
+      video.muted = storedMuted;
+    }
+    if (
+      !restoredPositionRef.current &&
+      storedPosition !== null &&
+      storedPosition > 0 &&
+      storedPosition < video.duration - 2
+    ) {
+      video.currentTime = storedPosition;
+      setCurrentTime(storedPosition);
+    }
+    restoredPositionRef.current = true;
+  };
+
+  const handleMetadataLoaded = (video: HTMLVideoElement) => {
+    setDuration(video.duration);
+    restorePlaybackState(video);
+  };
+
+  const handleTimeUpdate = (video: HTMLVideoElement) => {
+    setCurrentTime(video.currentTime);
+    if (Math.abs(video.currentTime - lastSavedPositionRef.current) >= POSITION_SAVE_INTERVAL_SECONDS) {
+      savePosition(video.currentTime);
+      lastSavedPositionRef.current = video.currentTime;
+    }
   };
 
   const enterFullscreen = async () => {
@@ -100,10 +173,14 @@ export function VideoPlayer({
         playsInline
         onClick={togglePlay}
         onPlay={() => setPaused(false)}
-        onPause={() => setPaused(true)}
-        onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
+        onPause={(event) => {
+          setPaused(true);
+          savePosition(event.currentTarget.currentTime);
+        }}
+        onLoadedMetadata={(event) => handleMetadataLoaded(event.currentTarget)}
         onDurationChange={(event) => setDuration(event.currentTarget.duration)}
-        onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+        onTimeUpdate={(event) => handleTimeUpdate(event.currentTarget)}
+        onEnded={clearPosition}
         onVolumeChange={(event) => {
           setMuted(event.currentTarget.muted);
           setVolume(event.currentTarget.volume);

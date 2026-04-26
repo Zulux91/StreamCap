@@ -28,7 +28,7 @@ VIDEO_DIR = Path(CUSTOM_VIDEO_ROOT_DIR or DEFAULT_VIDEO_ROOT_DIR)
 os.makedirs(VIDEO_DIR, exist_ok=True)
 
 VIDEO_META_CACHE = TTLCache(maxsize=50, ttl=300)
-CHUNK_CACHE = TTLCache(maxsize=25, ttl=60)
+STREAM_CHUNK_SIZE = 1024 * 1024
 
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -154,7 +154,7 @@ async def get_video(
 async def file_sender(video_path: Path):
     async with aiofiles.open(video_path, "rb") as file:
         while True:
-            chunk = await file.read(65536)
+            chunk = await file.read(STREAM_CHUNK_SIZE)
             if not chunk:
                 break
             yield chunk
@@ -162,27 +162,15 @@ async def file_sender(video_path: Path):
 
 # Async file sender (range content)
 async def file_sender_range(video_path: Path, start: int, end: int):
-    cache_key = f"{video_path.name}-{start}-{end}"
-
-    if cached := CHUNK_CACHE.get(cache_key):
-        yield cached
-        return
-
     async with aiofiles.open(video_path, "rb") as file:
         await file.seek(start)
-        chunks = []
         while start <= end:
-            chunk_size = min(65536, end - start + 1)
+            chunk_size = min(STREAM_CHUNK_SIZE, end - start + 1)
             chunk = await file.read(chunk_size)
             if not chunk:
                 break
-            chunks.append(chunk)
             start += len(chunk)
-
-        full_chunk = b"".join(chunks)
-        if len(full_chunk) < 1024 * 1024:
-            CHUNK_CACHE[cache_key] = full_chunk
-        yield full_chunk
+            yield chunk
 
 
 if __name__ == "__main__":

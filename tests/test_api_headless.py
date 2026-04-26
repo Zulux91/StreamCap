@@ -200,6 +200,24 @@ class HeadlessApiSmokeTest(unittest.IsolatedAsyncioTestCase):
         assert response.status_code == 200, response.text
         assert response.content == b"video"
 
+    def test_video_endpoint_supports_byte_ranges(self):
+        headers = self._auth_headers()
+        downloads = self.run_path / "downloads"
+        downloads.mkdir(parents=True)
+        video = downloads / "sample.mp4"
+        video.write_bytes(b"0123456789")
+
+        response = self.client.get(
+            "/api/videos",
+            headers={**headers, "Range": "bytes=4-7"},
+            params={"filename": "sample.mp4"},
+        )
+
+        assert response.status_code == 206, response.text
+        assert response.headers["content-range"] == "bytes 4-7/10"
+        assert response.headers["accept-ranges"] == "bytes"
+        assert response.content == b"4567"
+
     def test_browser_exported_cookie_array_can_be_saved(self):
         headers = self._auth_headers()
 

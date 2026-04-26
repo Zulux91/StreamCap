@@ -13,7 +13,7 @@ from ..dependencies import get_settings, verify_session
 router = APIRouter()
 
 _META_CACHE: TTLCache = TTLCache(maxsize=50, ttl=300)
-_CHUNK_CACHE: TTLCache = TTLCache(maxsize=25, ttl=60)
+_STREAM_CHUNK_SIZE = 1024 * 1024
 
 
 def _get_video_dir(settings) -> Path:
@@ -92,26 +92,17 @@ async def get_video(
 
 async def _send_full(path: Path):
     async with aiofiles.open(path, "rb") as f:
-        while chunk := await f.read(65536):
+        while chunk := await f.read(_STREAM_CHUNK_SIZE):
             yield chunk
 
 
 async def _send_range(path: Path, start: int, end: int):
-    cache_key = f"{path.name}-{start}-{end}"
-    if cached := _CHUNK_CACHE.get(cache_key):
-        yield cached
-        return
     async with aiofiles.open(path, "rb") as f:
         await f.seek(start)
-        chunks = []
         pos = start
         while pos <= end:
-            chunk = await f.read(min(65536, end - pos + 1))
+            chunk = await f.read(min(_STREAM_CHUNK_SIZE, end - pos + 1))
             if not chunk:
                 break
-            chunks.append(chunk)
             pos += len(chunk)
-    full = b"".join(chunks)
-    if len(full) < 1024 * 1024:
-        _CHUNK_CACHE[cache_key] = full
-    yield full
+            yield chunk
