@@ -8,6 +8,7 @@ on:
       - 'main.py'
       - 'requirements*.txt'
       - 'pyproject.toml'
+      - 'tests/**'
   pull_request:
     branches: [main]
     paths:
@@ -15,6 +16,7 @@ on:
       - 'main.py'
       - 'requirements*.txt'
       - 'pyproject.toml'
+      - 'tests/**'
 
 jobs:
   test-python:
