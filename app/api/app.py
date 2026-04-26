@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -5,9 +7,17 @@ from .routes import auth, events, platforms, recordings, settings, status, stora
 
 app = FastAPI(title="StreamCap API", version="1.0")
 
+
+def _cors_origins() -> list[str]:
+    configured = os.getenv("STREAMCAP_CORS_ORIGINS")
+    if configured:
+        return [origin.strip() for origin in configured.split(",") if origin.strip()]
+    return ["http://localhost:3000", "http://127.0.0.1:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=_cors_origins(),
+    allow_origin_regex=r"^http://(10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+|192\.168\.\d+\.\d+):3000$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
