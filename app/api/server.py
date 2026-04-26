@@ -12,6 +12,7 @@ from app.core.config.language_manager import LanguageManager
 from app.core.recording.record_manager import RecordingManager
 from app.core.runtime.process_manager import AsyncProcessManager
 from app.core.update.update_checker import UpdateChecker
+from app.utils import utils
 
 from . import dependencies
 from .app import app as api_app
@@ -80,6 +81,7 @@ class _HeadlessApp:
         self.run_path = execute_dir
         self.config_manager = ConfigManager(self.run_path)
         self.process_manager = AsyncProcessManager()
+        self.subprocess_start_up_info = utils.get_startup_info()
         self.settings = _HeadlessSettings(self)
         self.language_code = self.settings.language_code
         self.language_manager = LanguageManager(self)
