@@ -109,6 +109,18 @@ class LiveStreamRecorder:
         return utils.clean_path_component(full_filename, now)
 
     def _get_output_dir(self, stream_info: StreamData) -> str:
+        if self.recording.recording_dir:
+            default_output_dir = os.path.abspath(self.output_dir.rstrip("/").rstrip("\\"))
+            current_recording_dir = os.path.abspath(self.recording.recording_dir)
+            try:
+                relative_dir = os.path.relpath(current_recording_dir, default_output_dir)
+                is_generated_dir = not relative_dir.startswith("..") and relative_dir != "."
+            except ValueError:
+                is_generated_dir = False
+
+            if is_generated_dir and any(ord(char) > 127 for char in relative_dir):
+                self.recording.recording_dir = None
+
         if self.recording.recording_dir and self.user_config.get("folder_name_time"):
             current_date = datetime.today().strftime("%Y-%m-%d")
             if current_date not in self.recording.recording_dir:

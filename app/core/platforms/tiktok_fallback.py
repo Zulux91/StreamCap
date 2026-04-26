@@ -144,7 +144,7 @@ class TikTokFallbackClient:
         flv_url = self._get_best_flv(room_info)
 
         return StreamData(
-            platform="TikTok直播",
+            platform="TikTok",
             anchor_name=owner.get("display_id") or username,
             is_live=is_live,
             title=data.get("title") or "",
