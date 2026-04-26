@@ -1,6 +1,7 @@
 import streamget
 
 from ....utils.utils import trace_error_decorator
+from ..tiktok_fallback import TikTokFallbackClient
 from .base import PlatformHandler, StreamData
 
 
@@ -69,10 +70,17 @@ class TikTokHandler(PlatformHandler):
 
     @trace_error_decorator
     async def get_stream_info(self, live_url: str) -> StreamData:
-        if not self.live_stream:
-            self.live_stream = streamget.TikTokLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
-        json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
-        return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
+        try:
+            if not self.live_stream:
+                self.live_stream = streamget.TikTokLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
+            json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+            stream_info = await self.live_stream.fetch_stream_url(json_data, self.record_quality)
+            if stream_info and getattr(stream_info, "record_url", None):
+                return stream_info
+        except Exception:
+            self.live_stream = None
+
+        return TikTokFallbackClient(self.proxy, self.cookies).get_stream_info(live_url, self.record_quality)
 
 
 class KuaishouHandler(PlatformHandler):
