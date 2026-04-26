@@ -56,6 +56,12 @@ const STATUS_CONFIG: Record<
     borderColor: "border-destructive/30",
     dotColor: "bg-destructive",
   },
+  LIVE_STATUS_CHECK_ERROR: {
+    label: "Check Error",
+    textColor: "text-destructive",
+    borderColor: "border-destructive/30",
+    dotColor: "bg-destructive",
+  },
   STOPPED_MONITORING: {
     label: "Stopped",
     textColor: "text-muted-foreground",
@@ -115,7 +121,7 @@ export function RecordingCard({
   const deleteRecording = useDeleteRecording();
 
   const statusInfo = recording.status_info
-    ? STATUS_CONFIG[recording.status_info]
+    ? STATUS_CONFIG[recording.status_info] ?? FALLBACK_STATUS
     : FALLBACK_STATUS;
 
   const handleStart = (e: React.MouseEvent) => {

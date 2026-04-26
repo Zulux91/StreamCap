@@ -217,10 +217,33 @@ function CookiesTab() {
 
   const cookieText = cookies ? JSON.stringify(cookies, null, 2) : "{}";
 
+  const normalizeCookies = (value: unknown): Record<string, string> | null => {
+    if (Array.isArray(value)) {
+      const cookieString = value
+        .filter(
+          (cookie): cookie is { name: string; value: string } =>
+            typeof cookie?.name === "string" && typeof cookie?.value === "string"
+        )
+        .map((cookie) => `${cookie.name}=${cookie.value}`)
+        .join("; ");
+      return cookieString ? { tiktok: cookieString } : null;
+    }
+    if (value && typeof value === "object") {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, cookieValue]) => [
+          key,
+          typeof cookieValue === "string" ? cookieValue : JSON.stringify(cookieValue),
+        ])
+      );
+    }
+    return null;
+  };
+
   const handleSave = (value: string) => {
     try {
       const parsed = JSON.parse(value);
-      updateCookies.mutate(parsed);
+      const normalized = normalizeCookies(parsed);
+      if (normalized) updateCookies.mutate(normalized);
     } catch {
       // invalid JSON — ignore
     }
@@ -239,7 +262,8 @@ function CookiesTab() {
         spellCheck={false}
       />
       <p className="text-xs text-muted-foreground mt-2">
-        Changes are saved automatically when you click outside the editor.
+        Changes are saved automatically when you click outside the editor. Browser-exported cookie arrays are accepted
+        and saved as TikTok cookies.
       </p>
     </GlassCard>
   );

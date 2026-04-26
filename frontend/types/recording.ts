@@ -8,6 +8,7 @@ export type RecordingStatus =
   | "RECORDING"
   | "NOT_RECORDING"
   | "CHECK_ERROR"
+  | "LIVE_STATUS_CHECK_ERROR"
   | "STOPPED_MONITORING"
   | "RECORDING_ERROR"
   | "NOT_RECORDING_SPACE"

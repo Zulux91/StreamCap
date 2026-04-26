@@ -7,6 +7,22 @@ from ..dependencies import get_recording_manager, get_settings, verify_session
 router = APIRouter()
 
 
+def _normalize_cookie_payload(body: Any) -> dict[str, str]:
+    if isinstance(body, list):
+        cookie_string = "; ".join(
+            f"{cookie.get('name')}={cookie.get('value')}"
+            for cookie in body
+            if isinstance(cookie, dict) and cookie.get("name") and cookie.get("value")
+        )
+        return {"tiktok": cookie_string} if cookie_string else {}
+    if isinstance(body, dict):
+        return {
+            str(key): value if isinstance(value, str) else str(value)
+            for key, value in body.items()
+        }
+    return {}
+
+
 @router.get("")
 async def get_settings_endpoint(
     settings=Depends(get_settings),
@@ -54,12 +70,12 @@ async def get_cookies(
 
 @router.put("/cookies")
 async def update_cookies(
-    body: dict[str, Any],
+    body: Any,
     settings=Depends(get_settings),
     rm=Depends(get_recording_manager),
     _: dict = Depends(verify_session),
 ):
-    settings.cookies_config.update(body)
+    settings.cookies_config.update(_normalize_cookie_payload(body))
     await rm.app.config_manager.save_cookies_config(settings.cookies_config)
     return settings.cookies_config
 
