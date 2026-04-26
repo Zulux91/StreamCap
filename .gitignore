@@ -89,6 +89,7 @@ ipython_config.py
 /config/web_auth.json
 .ruff_cache/
 logs/
+.claude/
 /storage/
 ffmpeg/
 node/

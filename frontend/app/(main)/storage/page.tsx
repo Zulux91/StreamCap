@@ -128,7 +128,7 @@ export default function StoragePage() {
           </div>
           <VideoPlayer
             src={storageService.getVideoUrl(preview.name, currentPath)}
-            className="max-h-80"
+            className="w-full"
           />
         </GlassCard>
       )}
