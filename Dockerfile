@@ -36,6 +36,6 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /app/ ./
 
-EXPOSE 6006 6007
+EXPOSE 6007
 
-CMD ["sh", "-c", "python main.py --web --host 0.0.0.0"]
+CMD ["python", "-m", "app.api.server"]
