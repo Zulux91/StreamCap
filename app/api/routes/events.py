@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from sse_starlette.sse import EventSourceResponse
 
 from ...core.events.event_bus import EventBus
-from ..dependencies import _auth_manager
+from .. import dependencies
 
 router = APIRouter()
 
@@ -16,7 +16,8 @@ async def events_stream(
     request: Request,
     token: str = Query(...),
 ):
-    if not _auth_manager or not _auth_manager.validate_session(token):
+    auth_manager = dependencies.get_auth_manager()
+    if not auth_manager or not auth_manager.validate_session(token):
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
     async def event_generator():
