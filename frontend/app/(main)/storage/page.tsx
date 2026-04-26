@@ -40,6 +40,8 @@ export default function StoragePage() {
   const { data: browse, isLoading } = useStorageBrowse(currentPath);
   const { data: stats } = useStorageStats();
   const deleteFile = useDeleteFile();
+  const entries = browse ?? [];
+  const videoCount = entries.filter((entry) => entry.type === "file" && isVideo(entry)).length;
 
   const breadcrumbs = currentPath ? currentPath.split("/").filter(Boolean) : [];
 
@@ -72,7 +74,7 @@ export default function StoragePage() {
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <HardDriveIcon className="size-4" />
             <span>
-              {formatFileSize(stats.used_bytes)} / {formatFileSize(stats.total_bytes)}
+              {formatFileSize(stats.used)} / {formatFileSize(stats.total)}
             </span>
           </div>
         )}
@@ -81,10 +83,10 @@ export default function StoragePage() {
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Total", value: formatFileSize(stats.total_bytes) },
-            { label: "Used", value: formatFileSize(stats.used_bytes) },
-            { label: "Free", value: formatFileSize(stats.free_bytes) },
-            { label: "Videos", value: String(stats.video_count) },
+            { label: "Total", value: formatFileSize(stats.total) },
+            { label: "Used", value: formatFileSize(stats.used) },
+            { label: "Free", value: formatFileSize(stats.free) },
+            { label: "Videos", value: String(videoCount) },
           ].map(({ label, value }) => (
             <GlassCard key={label} padding="sm" className="space-y-1">
               <p className="text-xs text-muted-foreground">{label}</p>
@@ -138,13 +140,13 @@ export default function StoragePage() {
               <Skeleton key={i} className="h-10 rounded-lg" />
             ))}
           </div>
-        ) : !browse?.entries.length ? (
+        ) : !entries.length ? (
           <p className="text-center text-sm text-muted-foreground py-10">
             {currentPath ? "Empty directory" : "No recorded files yet"}
           </p>
         ) : (
           <div className="divide-y divide-white/5">
-            {browse.entries.map((entry) => (
+            {entries.map((entry) => (
               <div
                 key={entry.path}
                 className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg transition-colors group cursor-default"

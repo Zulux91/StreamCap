@@ -21,18 +21,13 @@ export interface StorageEntry {
   extension?: string;
 }
 
-export interface StorageBrowseResponse {
-  entries: StorageEntry[];
-  path: string;
-  parent_path: string | null;
-}
+export type StorageBrowseResponse = StorageEntry[];
 
 export interface StorageStats {
-  total_bytes: number;
-  used_bytes: number;
-  free_bytes: number;
-  file_count: number;
-  video_count: number;
+  total: number;
+  used: number;
+  free: number;
+  path: string;
 }
 
 export interface AppStatus {
