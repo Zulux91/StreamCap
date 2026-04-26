@@ -12,6 +12,12 @@ from .app import app as api_app
 
 
 class _PubSub:
+    def subscribe_topic(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
+
+    def unsubscribe_topic(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
+
     def send_others_on_topic(self, *_args: Any, **_kwargs: Any) -> None:
         return None
 
