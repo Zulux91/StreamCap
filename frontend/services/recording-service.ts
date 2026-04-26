@@ -12,8 +12,8 @@ export const recordingService = {
     platform?: string;
     search?: string;
   }): Promise<Recording[]> => {
-    const res = await api.get<{ recordings: Recording[] }>("/api/recordings", { params });
-    return res.data.recordings;
+    const res = await api.get<Recording[]>("/api/recordings", { params });
+    return res.data;
   },
 
   get: async (id: string): Promise<Recording> => {
