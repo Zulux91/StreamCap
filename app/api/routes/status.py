@@ -25,12 +25,16 @@ async def app_status(
     rm=Depends(get_recording_manager),
     _: dict = Depends(verify_session),
 ):
+    if not rm.periodic_task or rm.periodic_task.done():
+        await rm.setup_periodic_live_check(int(rm.loop_time_seconds or 180))
+
     recordings = rm.recordings
     return {
         "active_recordings": sum(1 for r in recordings if r.is_recording),
         "live_streams": sum(1 for r in recordings if r.is_live),
         "monitoring": sum(1 for r in recordings if r.monitor_status),
         "recording_enabled": rm.app.recording_enabled,
+        "live_checker": rm.get_periodic_live_check_status(),
     }
 
 

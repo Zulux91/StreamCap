@@ -113,6 +113,29 @@ class HeadlessApiSmokeTest(unittest.IsolatedAsyncioTestCase):
         response = self.client.delete(f"/api/recordings/{rec_id}", headers=headers)
         assert response.status_code == 204, response.text
 
+    def test_status_includes_live_checker_heartbeat(self):
+        headers = self._auth_headers()
+
+        response = self.client.get("/api/status", headers=headers)
+        assert response.status_code == 200, response.text
+        live_checker = response.json()["live_checker"]
+
+        assert set(live_checker.keys()) == {
+            "started",
+            "running",
+            "healthy",
+            "last_tick",
+            "last_tick_age_seconds",
+            "last_error",
+            "failures",
+            "interval_seconds",
+        }
+        assert isinstance(live_checker["started"], bool)
+        assert isinstance(live_checker["running"], bool)
+        assert isinstance(live_checker["healthy"], bool)
+        assert isinstance(live_checker["failures"], int)
+        assert isinstance(live_checker["interval_seconds"], int)
+
     def test_batch_routes_are_not_captured_by_single_recording_routes(self):
         headers = self._auth_headers()
         self._create_recording(headers)

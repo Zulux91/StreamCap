@@ -36,6 +36,16 @@ export interface AppStatus {
   live_streams: number;
   monitoring: number;
   recording_enabled: boolean;
+  live_checker: {
+    started: boolean;
+    running: boolean;
+    healthy: boolean;
+    last_tick: string | null;
+    last_tick_age_seconds: number | null;
+    last_error: string | null;
+    failures: number;
+    interval_seconds: number;
+  };
 }
 
 export interface HealthResponse {

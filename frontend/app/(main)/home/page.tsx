@@ -17,6 +17,12 @@ import {
   CircleStopIcon,
 } from "lucide-react";
 
+function formatAge(seconds: number | null | undefined) {
+  if (seconds == null) return "No tick yet";
+  if (seconds < 60) return `${Math.round(seconds)}s ago`;
+  return `${Math.round(seconds / 60)}m ago`;
+}
+
 export default function HomePage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { data: status, isLoading } = useAppStatus();
@@ -74,6 +80,42 @@ export default function HomePage() {
           </GlassCard>
         ))}
       </div>
+
+      <GlassCard padding="md" className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold text-sm">Live Checker</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Periodic live status monitor
+            </p>
+          </div>
+          {isLoading ? (
+            <Skeleton className="h-6 w-20 rounded-full" />
+          ) : (
+            <span
+              className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                status?.live_checker.healthy
+                  ? "border-green-400/30 text-green-400"
+                  : "border-destructive/30 text-destructive"
+              }`}
+            >
+              {status?.live_checker.healthy ? "Healthy" : "Needs attention"}
+            </span>
+          )}
+        </div>
+        {isLoading ? (
+          <Skeleton className="h-4 w-64" />
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Last tick: {formatAge(status?.live_checker.last_tick_age_seconds)} · Interval: {status?.live_checker.interval_seconds ?? "—"}s · Failures: {status?.live_checker.failures ?? "—"}
+          </p>
+        )}
+        {!isLoading && status?.live_checker.last_error && (
+          <p className="text-xs text-destructive truncate">
+            Last error: {status.live_checker.last_error}
+          </p>
+        )}
+      </GlassCard>
 
       <GlassCard padding="lg">
         <h3 className="font-semibold mb-4">Quick Actions</h3>
