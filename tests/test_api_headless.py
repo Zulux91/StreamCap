@@ -136,6 +136,17 @@ class HeadlessApiSmokeTest(unittest.IsolatedAsyncioTestCase):
         assert isinstance(live_checker["failures"], int)
         assert isinstance(live_checker["interval_seconds"], int)
 
+    def test_live_checker_can_be_restarted_manually(self):
+        headers = self._auth_headers()
+
+        response = self.client.post("/api/live-checker/restart", headers=headers)
+        assert response.status_code == 200, response.text
+        live_checker = response.json()
+
+        assert live_checker["started"] is True
+        assert live_checker["running"] is True
+        assert live_checker["healthy"] is True
+
     def test_batch_routes_are_not_captured_by_single_recording_routes(self):
         headers = self._auth_headers()
         self._create_recording(headers)

@@ -38,6 +38,14 @@ async def app_status(
     }
 
 
+@router.post("/live-checker/restart")
+async def restart_live_checker(
+    rm=Depends(get_recording_manager),
+    _: dict = Depends(verify_session),
+):
+    return await rm.restart_periodic_live_check(int(rm.loop_time_seconds or 180))
+
+
 @router.get("/updates/check")
 async def check_updates(
     rm=Depends(get_recording_manager),

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAppStatus } from "@/hooks/use-status";
+import { useAppStatus, useRestartLiveChecker } from "@/hooks/use-status";
 import { useBatchStart, useBatchStop } from "@/hooks/use-recordings";
 import { RecordingDialog } from "@/components/features/recording/recording-dialog";
 import {
@@ -26,6 +26,7 @@ function formatAge(seconds: number | null | undefined) {
 export default function HomePage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { data: status, isLoading } = useAppStatus();
+  const restartLiveChecker = useRestartLiveChecker();
   const batchStart = useBatchStart();
   const batchStop = useBatchStop();
 
@@ -89,19 +90,29 @@ export default function HomePage() {
               Periodic live status monitor
             </p>
           </div>
-          {isLoading ? (
-            <Skeleton className="h-6 w-20 rounded-full" />
-          ) : (
-            <span
-              className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
-                status?.live_checker.healthy
-                  ? "border-green-400/30 text-green-400"
-                  : "border-destructive/30 text-destructive"
-              }`}
+          <div className="flex items-center gap-2">
+            {isLoading ? (
+              <Skeleton className="h-6 w-20 rounded-full" />
+            ) : (
+              <span
+                className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                  status?.live_checker.healthy
+                    ? "border-green-400/30 text-green-400"
+                    : "border-destructive/30 text-destructive"
+                }`}
+              >
+                {status?.live_checker.healthy ? "Healthy" : "Needs attention"}
+              </span>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => restartLiveChecker.mutate()}
+              disabled={restartLiveChecker.isPending}
             >
-              {status?.live_checker.healthy ? "Healthy" : "Needs attention"}
-            </span>
-          )}
+              Restart
+            </Button>
+          </div>
         </div>
         {isLoading ? (
           <Skeleton className="h-4 w-64" />

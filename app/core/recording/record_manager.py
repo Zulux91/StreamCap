@@ -223,6 +223,23 @@ class RecordingManager:
     def set_periodic_task_running(cls, value=True):
         cls._periodic_task_running = value
 
+    async def restart_periodic_live_check(self, interval: int | None = None):
+        """Force a fresh periodic live-check task for manual recovery."""
+        interval = int(interval or self.periodic_task_interval or self.loop_time_seconds or 180)
+        if self.periodic_task and not self.periodic_task.done():
+            logger.warning("Manually restarting periodic live check task")
+            self.periodic_task.cancel()
+            try:
+                await self.periodic_task
+            except asyncio.CancelledError:
+                logger.info("Previous periodic live check task cancelled")
+
+        RecordingManager.set_periodic_task_running(False)
+        self.periodic_task = None
+        self.periodic_task_last_error = None
+        await self.setup_periodic_live_check(interval)
+        return self.get_periodic_live_check_status()
+
     async def setup_periodic_live_check(self, interval: int = 180):
         """Set up a periodic task to check live status."""
         self.periodic_task_interval = interval
