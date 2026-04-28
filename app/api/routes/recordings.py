@@ -143,28 +143,6 @@ async def delete_recording(
     await run_in_flet_loop(rm.delete_recording_cards([recording]))
 
 
-@router.post("/{rec_id}/start")
-async def start_monitoring(
-    rec_id: str,
-    rm=Depends(get_recording_manager),
-    _: dict = Depends(verify_session),
-):
-    recording = _get_or_404(rm, rec_id)
-    await run_in_flet_loop(rm.start_monitor_recording(recording))
-    return {"success": True}
-
-
-@router.post("/{rec_id}/stop")
-async def stop_monitoring(
-    rec_id: str,
-    rm=Depends(get_recording_manager),
-    _: dict = Depends(verify_session),
-):
-    recording = _get_or_404(rm, rec_id)
-    await run_in_flet_loop(rm.stop_monitor_recording(recording))
-    return {"success": True}
-
-
 @router.post("/batch/delete")
 async def batch_delete(
     body: BatchIdsInput,
@@ -217,3 +195,25 @@ async def batch_stop(
         await run_in_flet_loop(rm.stop_monitor_recording(recording, auto_save=False))
     await run_in_flet_loop(rm.persist_recordings())
     return {"stopped": len(recordings)}
+
+
+@router.post("/{rec_id}/start")
+async def start_monitoring(
+    rec_id: str,
+    rm=Depends(get_recording_manager),
+    _: dict = Depends(verify_session),
+):
+    recording = _get_or_404(rm, rec_id)
+    await run_in_flet_loop(rm.start_monitor_recording(recording))
+    return {"success": True}
+
+
+@router.post("/{rec_id}/stop")
+async def stop_monitoring(
+    rec_id: str,
+    rm=Depends(get_recording_manager),
+    _: dict = Depends(verify_session),
+):
+    recording = _get_or_404(rm, rec_id)
+    await run_in_flet_loop(rm.stop_monitor_recording(recording))
+    return {"success": True}

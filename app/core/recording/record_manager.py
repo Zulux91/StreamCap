@@ -119,7 +119,7 @@ class RecordingManager:
             )
 
             EventBus.get_instance().publish(RecordingEvent("recording_updated", recording.rec_id))
-            asyncio.create_task(self.check_if_live(recording))
+            asyncio.create_task(self._safe_check_if_live(recording))
 
             if auto_save:
                 asyncio.create_task(self.persist_recordings())
@@ -183,11 +183,30 @@ class RecordingManager:
 
     async def check_all_live_status(self):
         """Check the live status of all recordings and update their display titles."""
+        monitored = [recording for recording in self.recordings if recording.monitor_status]
+        due_recordings = []
         for recording in self.recordings:
             if recording.monitor_status and not recording.is_recording:
                 is_exceeded = utils.is_time_interval_exceeded(recording.detection_time, recording.loop_time_seconds)
                 if not recording.detection_time or is_exceeded:
-                    asyncio.create_task(self.check_if_live(recording))
+                    due_recordings.append(recording)
+
+        logger.info(
+            "Periodic live check cycle: "
+            f"total={len(self.recordings)}, monitoring={len(monitored)}, due={len(due_recordings)}"
+        )
+        for recording in due_recordings:
+            asyncio.create_task(self._safe_check_if_live(recording))
+
+    async def _safe_check_if_live(self, recording: Recording):
+        try:
+            await self.check_if_live(recording)
+        except Exception as exc:
+            recording.is_checking = False
+            recording.status_info = RecordingStatus.LIVE_STATUS_CHECK_ERROR
+            logger.exception(f"Live check failed for {recording.url}: {exc}")
+            if recording.monitor_status:
+                EventBus.get_instance().publish(RecordingEvent("recording_updated", recording.rec_id))
 
     _periodic_task_running = False
 
@@ -205,13 +224,19 @@ class RecordingManager:
         async def periodic_check():
             logger.info("Starting periodic live check background task")
             while True:
-                immediate_check_on_startup = self.app.settings.user_config.get("check_live_on_browser_refresh", True)
-                if immediate_check_on_startup:
-                    await asyncio.sleep(interval)
-                await self.check_free_space()
-                if self.app.recording_enabled:
-                    await self.check_all_live_status()
-                if not immediate_check_on_startup:
+                try:
+                    immediate_check_on_startup = self.app.settings.user_config.get("check_live_on_browser_refresh", True)
+                    if immediate_check_on_startup:
+                        await asyncio.sleep(interval)
+                    await self.check_free_space()
+                    if self.app.recording_enabled:
+                        await self.check_all_live_status()
+                    else:
+                        logger.info("Periodic live check skipped because recording is disabled")
+                    if not immediate_check_on_startup:
+                        await asyncio.sleep(interval)
+                except Exception as exc:
+                    logger.exception(f"Periodic live check cycle failed: {exc}")
                     await asyncio.sleep(interval)
 
         if not RecordingManager.is_periodic_task_running():
@@ -269,6 +294,13 @@ class RecordingManager:
 
         recording.status_info = RecordingStatus.STATUS_CHECKING
         platform, platform_key = get_platform_info(recording.url)
+
+        if not platform or not platform_key:
+            recording.is_checking = False
+            recording.status_info = RecordingStatus.LIVE_STATUS_CHECK_ERROR
+            logger.error(f"Unsupported live URL, cannot check status: {recording.url}")
+            EventBus.get_instance().publish(RecordingEvent("recording_updated", recording.rec_id))
+            return
 
         if platform and platform_key and (recording.platform is None or recording.platform_key is None):
             recording.platform = platform

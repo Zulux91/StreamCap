@@ -73,7 +73,7 @@ export default function StoragePage() {
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <HardDriveIcon className="size-4" />
             <span>
-              {formatFileSize(stats.used)} / {formatFileSize(stats.total)}
+              Recordings: {formatFileSize(stats.used)} / {formatFileSize(stats.total)}
             </span>
           </div>
         )}
@@ -83,7 +83,7 @@ export default function StoragePage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Total", value: formatFileSize(stats.total) },
-            { label: "Used", value: formatFileSize(stats.used) },
+            { label: "Recordings", value: formatFileSize(stats.used) },
             { label: "Free", value: formatFileSize(stats.free) },
             { label: "Videos", value: String(stats.video_count) },
           ].map(({ label, value }) => (

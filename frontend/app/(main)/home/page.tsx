@@ -1,11 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppStatus } from "@/hooks/use-status";
 import { useBatchStart, useBatchStop } from "@/hooks/use-recordings";
+import { RecordingDialog } from "@/components/features/recording/recording-dialog";
 import {
   RadioTowerIcon,
   TrendingUpIcon,
@@ -17,7 +18,7 @@ import {
 } from "lucide-react";
 
 export default function HomePage() {
-  const router = useRouter();
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { data: status, isLoading } = useAppStatus();
   const batchStart = useBatchStart();
   const batchStop = useBatchStop();
@@ -77,7 +78,7 @@ export default function HomePage() {
       <GlassCard padding="lg">
         <h3 className="font-semibold mb-4">Quick Actions</h3>
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={() => router.push("/recordings")}>
+          <Button variant="outline" onClick={() => setDialogOpen(true)}>
             <PlusIcon className="size-4" />
             Add Recording
           </Button>
@@ -99,6 +100,8 @@ export default function HomePage() {
           </Button>
         </div>
       </GlassCard>
+
+      <RecordingDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   );
 }

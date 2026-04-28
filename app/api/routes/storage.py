@@ -25,12 +25,15 @@ def _validate_path(video_dir: Path, relative: str) -> Path:
         raise HTTPException(status_code=400, detail="Path outside allowed directory")
 
 
-def _count_videos(video_dir: Path) -> int:
-    return sum(
-        1
-        for item in video_dir.rglob("*")
-        if item.is_file() and item.suffix.lower() in VIDEO_EXTENSIONS
-    )
+def _get_video_stats(video_dir: Path) -> tuple[int, int]:
+    count = 0
+    size = 0
+    for item in video_dir.rglob("*"):
+        if not item.is_file() or item.suffix.lower() not in VIDEO_EXTENSIONS:
+            continue
+        count += 1
+        size += item.stat().st_size
+    return count, size
 
 
 @router.get("/browse")
@@ -68,13 +71,14 @@ async def storage_stats(
 ):
     video_dir = _get_video_dir(settings)
     try:
-        total, used, free = shutil.disk_usage(str(video_dir))
+        total, _disk_used, free = shutil.disk_usage(str(video_dir))
+        video_count, videos_used = _get_video_stats(video_dir)
         return {
             "total": total,
-            "used": used,
+            "used": videos_used,
             "free": free,
             "path": str(video_dir),
-            "video_count": _count_videos(video_dir),
+            "video_count": video_count,
         }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

@@ -102,6 +102,46 @@ const FALLBACK_STATUS = {
   dotColor: "bg-muted-foreground/40",
 };
 
+const PLATFORM_LABELS: Record<string, string> = {
+  tiktok: "TikTok",
+};
+
+const QUALITY_LABELS: Record<string, string> = {
+  原画: "Original",
+  超清: "UHD",
+  高清: "HD",
+  标清: "SD",
+  流畅: "LD",
+};
+
+function getPlatformLabel(recording: Recording) {
+  if (recording.platform_key && PLATFORM_LABELS[recording.platform_key]) {
+    return PLATFORM_LABELS[recording.platform_key];
+  }
+
+  return recording.platform?.replace(/直播/g, "Live") ?? "";
+}
+
+function getDisplayTitle(recording: Recording) {
+  let title = recording.display_title || recording.url;
+  title = title.replace(/^\[直播中\]\s*/, "[Live] ");
+
+  for (const [source, replacement] of Object.entries(QUALITY_LABELS)) {
+    title = title.replaceAll(source, replacement);
+  }
+
+  return title;
+}
+
+function getSpeedLabel(recording: Recording) {
+  const speed = recording.speed?.trim();
+  if (!recording.is_recording || !speed || speed === "0 KB/s" || speed === "X KB/s") {
+    return null;
+  }
+
+  return speed;
+}
+
 interface RecordingCardProps {
   recording: Recording;
   selected: boolean;
@@ -142,6 +182,9 @@ export function RecordingCard({
   const displayedDuration =
     recording.cumulative_duration_seconds +
     (durationTick.key === durationKey ? durationTick.value : 0);
+  const platformLabel = getPlatformLabel(recording);
+  const displayTitle = getDisplayTitle(recording);
+  const speedLabel = getSpeedLabel(recording);
 
   const handleStart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -182,13 +225,13 @@ export function RecordingCard({
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm truncate">{recording.streamer_name}</p>
           <p className="text-xs text-muted-foreground truncate">
-            {recording.display_title || recording.url}
+            {displayTitle}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {recording.platform && (
+          {platformLabel && (
             <Badge variant="secondary" className="text-xs hidden sm:flex">
-              {recording.platform}
+              {platformLabel}
             </Badge>
           )}
           <Badge variant="outline" className={cn("text-xs", statusInfo.textColor)}>
@@ -199,9 +242,9 @@ export function RecordingCard({
               {formatDuration(displayedDuration)}
             </span>
           )}
-          {recording.speed && recording.speed !== "0 KB/s" && (
+          {speedLabel && (
             <span className="text-xs text-muted-foreground hidden lg:block">
-              {recording.speed}
+              {speedLabel}
             </span>
           )}
         </div>
@@ -245,7 +288,7 @@ export function RecordingCard({
         <div className="min-w-0">
           <p className="font-medium text-sm truncate">{recording.streamer_name}</p>
           <p className="text-xs text-muted-foreground truncate mt-0.5">
-            {recording.display_title || recording.url}
+            {displayTitle}
           </p>
         </div>
         <div
@@ -254,9 +297,9 @@ export function RecordingCard({
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {recording.platform && (
+        {platformLabel && (
           <Badge variant="secondary" className="text-xs">
-            {recording.platform}
+            {platformLabel}
           </Badge>
         )}
         <Badge variant="outline" className={cn("text-xs", statusInfo.textColor)}>
@@ -270,7 +313,7 @@ export function RecordingCard({
         </Badge>
       </div>
 
-      {(recording.is_recording || (recording.speed && recording.speed !== "0 KB/s")) && (
+      {(recording.is_recording || speedLabel) && (
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           {recording.is_recording && (
             <span className="flex items-center gap-1">
@@ -278,10 +321,10 @@ export function RecordingCard({
               {formatDuration(displayedDuration)}
             </span>
           )}
-          {recording.speed && recording.speed !== "0 KB/s" && (
+          {speedLabel && (
             <span className="flex items-center gap-1">
               <SignalIcon className="size-3" />
-              {recording.speed}
+              {speedLabel}
             </span>
           )}
         </div>

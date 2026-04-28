@@ -57,7 +57,7 @@ class Recording:
         self.flv_use_direct_download = flv_use_direct_download
         self.scheduled_time_range = None
         self.title = f"{streamer_name} - {self.quality}"
-        self.speed = "X KB/s"
+        self.speed = "0 KB/s"
         self.is_live = False
         self.is_recording = False
         self.start_time = None

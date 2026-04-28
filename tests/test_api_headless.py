@@ -113,6 +113,44 @@ class HeadlessApiSmokeTest(unittest.IsolatedAsyncioTestCase):
         response = self.client.delete(f"/api/recordings/{rec_id}", headers=headers)
         assert response.status_code == 204, response.text
 
+    def test_batch_routes_are_not_captured_by_single_recording_routes(self):
+        headers = self._auth_headers()
+        self._create_recording(headers)
+
+        response = self.client.post("/api/recordings/batch/start", headers=headers, json={"ids": []})
+        assert response.status_code == 200, response.text
+        assert response.json()["started"] == 1
+        assert self.headless_app.record_manager.recordings[0].monitor_status is True
+
+        response = self.client.post("/api/recordings/batch/stop", headers=headers, json={"ids": []})
+        assert response.status_code == 200, response.text
+        assert response.json()["stopped"] == 1
+        assert self.headless_app.record_manager.recordings[0].monitor_status is False
+
+    async def test_live_check_marks_unsupported_urls_as_check_errors(self):
+        recording = Recording(
+            rec_id="unsupported",
+            url="https://example.com/live/test",
+            streamer_name="unsupported-test",
+            record_format="TS",
+            quality="OD",
+            segment_record=False,
+            segment_time=3600,
+            monitor_status=True,
+            scheduled_recording=False,
+            scheduled_start_time="",
+            monitor_hours="",
+            recording_dir="",
+            enabled_message_push=False,
+            only_notify_no_record=False,
+            flv_use_direct_download=False,
+        )
+
+        await self.headless_app.record_manager._safe_check_if_live(recording)
+
+        assert recording.is_checking is False
+        assert recording.status_info == RecordingStatus.LIVE_STATUS_CHECK_ERROR
+
     def test_recordings_contract_includes_all_frontend_fields_and_statuses(self):
         headers = self._auth_headers()
         self._create_recording(headers)
@@ -168,7 +206,7 @@ class HeadlessApiSmokeTest(unittest.IsolatedAsyncioTestCase):
         stats = response.json()
         assert set(stats.keys()) == {"total", "used", "free", "path", "video_count"}
         assert isinstance(stats["total"], int)
-        assert isinstance(stats["used"], int)
+        assert stats["used"] == 10
         assert isinstance(stats["free"], int)
         assert stats["video_count"] == 2
 
